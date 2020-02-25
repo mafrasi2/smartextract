@@ -2,17 +2,19 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
+mod archives;
 mod config;
 mod unpack;
 
-fn do_unpack(archive: &PathBuf) {
-    print!("{}...", archive.as_os_str().to_string_lossy());
-    match unpack::try_unpack(&archive) {
+fn do_archives(archive: &archives::Archive) {
+    let path = archive.path();
+    print!("{}...", path.as_os_str().to_string_lossy());
+    match unpack::try_unpack(archive) {
         Err(unpack::UnpackError::NoPassword) => {print!("no password")},
         Err(unpack::UnpackError::Incomplete) => {print!{"incomplete archive"}},
         Err(unpack::UnpackError::Unknown) => {print!{"unkown error"}},
         Ok(_) => {
-            unpack::delete_archive(&archive);
+            archives::delete_archive(path);
             print!("success")
         }
     };
@@ -33,7 +35,14 @@ fn main() {
 
     for path in paths {
         if path.is_file() {
-            do_unpack(&path);
+            let archive = match archives::detect_archive(path.clone()) {
+                Some(archive) => archive,
+                None => {
+                    println!("not a supported archive: {}", path.as_os_str().to_string_lossy(),);
+                    continue;
+                }
+            };
+            do_archives(&archive);
         } else {
             let archives = match fs::read_dir(&path) {
                 Ok(archives) => archives,
@@ -50,10 +59,10 @@ fn main() {
                         break;
                     }
                 };
-                if !unpack::is_archive(&entry) {
-                    continue;
+                match archives::detect_archive(entry) {
+                    Some(archive) => do_archives(&archive),
+                    None => {}
                 }
-                do_unpack(&entry);
             }
         }
     }
