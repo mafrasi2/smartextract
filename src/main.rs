@@ -38,7 +38,7 @@ fn main() {
             let archives = match fs::read_dir(&path) {
                 Ok(archives) => archives,
                 Err(err) => {
-                    println!("error iterating {}: {}", path.as_os_str().to_string_lossy(), err);
+                    println!("can't iterate {}: {}", path.as_os_str().to_string_lossy(), err);
                     continue;
                 }
             };
@@ -46,7 +46,7 @@ fn main() {
                 let entry = match entry {
                     Ok(entry) => entry.path(),
                     Err(err) => {
-                        println!("error iterating {}: {}", path.as_os_str().to_string_lossy(), err);
+                        println!("error while iterating {}: {}", path.as_os_str().to_string_lossy(), err);
                         break;
                     }
                 };
