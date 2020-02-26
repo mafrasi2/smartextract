@@ -44,7 +44,6 @@ pub fn detect_archive(path: PathBuf) -> Option<Archive> {
         static ref INFIX_FIRST_PART_RE: Regex = Regex::new("^part0*1$").unwrap();
         static ref SUFFIX_PART_RE: Regex = Regex::new("^\\d+$").unwrap();
         static ref SUFFIX_FIRST_PART_RE: Regex = Regex::new("^0*1$").unwrap();
-
     }
 
     let fname = match path.file_name() {

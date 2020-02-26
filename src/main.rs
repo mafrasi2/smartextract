@@ -4,17 +4,22 @@ use std::path::PathBuf;
 
 mod archives;
 mod config;
+mod passwords;
 mod unpack;
 
-fn do_archives(archive: &archives::Archive) {
+fn do_archive(archive: &archives::Archive, pdb: &mut passwords::PasswordDatabase) {
     let path = archive.path();
     print!("{}...", path.as_os_str().to_string_lossy());
-    match unpack::try_unpack(archive) {
+    match unpack::try_unpack(archive, pdb) {
         Err(unpack::UnpackError::NoPassword) => {print!("no password")},
         Err(unpack::UnpackError::Incomplete) => {print!{"incomplete archive"}},
         Err(unpack::UnpackError::Unknown) => {print!{"unkown error"}},
-        Ok(_) => {
+        Ok(result) => {
             archives::delete_archive(path);
+            match result.password {
+                Some(pwd) => pdb.promote(&pwd),
+                None => {}
+            };
             print!("success")
         }
     };
@@ -22,7 +27,7 @@ fn do_archives(archive: &archives::Archive) {
 }
 
 fn main() {
-    let cfg = config::Config::load();
+    let mut cfg = config::Config::load();
     let args = env::args();
     let paths = if args.len() > 1 {
         args.into_iter()
@@ -33,6 +38,8 @@ fn main() {
         vec![PathBuf::from(".")]
     };
 
+    let mut pdb = passwords::PasswordDatabase::create(cfg.passwords.clone());
+
     for path in paths {
         if path.is_file() {
             let archive = match archives::detect_archive(path.clone()) {
@@ -42,7 +49,7 @@ fn main() {
                     continue;
                 }
             };
-            do_archives(&archive);
+            do_archive(&archive, &mut pdb);
         } else {
             let archives = match fs::read_dir(&path) {
                 Ok(archives) => archives,
@@ -60,11 +67,12 @@ fn main() {
                     }
                 };
                 match archives::detect_archive(entry) {
-                    Some(archive) => do_archives(&archive),
+                    Some(archive) => do_archive(&archive, &mut pdb),
                     None => {}
                 }
             }
         }
     }
+    cfg.passwords = pdb.passwords;
     cfg.store();
 }
