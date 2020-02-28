@@ -5,6 +5,7 @@ use std::path::PathBuf;
 mod archives;
 mod config;
 mod passwords;
+mod rooted_tempdir;
 mod unpack;
 
 fn do_archive(archive: &archives::Archive, pdb: &mut passwords::PasswordDatabase) {
