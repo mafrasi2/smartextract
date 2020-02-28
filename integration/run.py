@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import enum
 import json
 import re
 import shutil
@@ -35,8 +36,9 @@ class UnpackError(Exception):
     def __str__(self):
         return f"{super().__str__()}. Output:\n{self.log}"
 
-class ResultError(Exception):
-    pass
+class CheckResult(enum.Enum):
+    PASSED = enum.auto()
+    FAILED = enum.auto()
 
 def run(outdir, test, executable, verbose=False):
     shutil.copytree(test, outdir, dirs_exist_ok=True)
@@ -48,7 +50,10 @@ def run(outdir, test, executable, verbose=False):
 
 def check(outdir, should_desc, verbose=False):
     is_desc = generate_desc.describe(outdir)
-    raise NotImplementedError
+    if is_desc == should_desc:
+        return CheckResult.PASSED
+    else:
+        return CheckResult.FAILED
 
 def run_test(test, executable, verbose=False):
     with (test / "description.json").open() as f:
@@ -56,7 +61,7 @@ def run_test(test, executable, verbose=False):
     with tempfile.TemporaryDirectory() as outdir:
         outdir = Path(outdir)
         run(outdir, test, executable, verbose=verbose)
-        check(outdir, desc, verbose=verbose)
+        return check(outdir, desc, verbose=verbose)
 
 def get_executable():
     msgs = sp.check_output(["cargo", "build", "--quiet", "--message-format=json"])
@@ -82,13 +87,15 @@ if __name__ == "__main__":
         print(f"Testing {test.name}...", end="")
         sys.stdout.flush()
         try:
-            run_test(test, executable, verbose=args.verbose)
-            print("SUCCESS")
+            result = run_test(test, executable, verbose=args.verbose)
+            if result == CheckResult.PASSED:
+                print("PASSED")
+            else:
+                print("FAILED")
+                if args.verbose:
+                    print("error: check failed")
         except UnpackError as e:
             all_passed = False
             print("FAILED")
             if args.verbose:
                 print(e)
-        except ResultError as e:
-            all_passed = False
-            print("FAILED")
