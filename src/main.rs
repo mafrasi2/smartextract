@@ -12,9 +12,7 @@ fn do_archive(archive: &archives::Archive, pdb: &mut passwords::PasswordDatabase
     let path = archive.path();
     print!("{}...", path.as_os_str().to_string_lossy());
     match unpack::try_unpack(archive, pdb) {
-        Err(unpack::UnpackError::NoPassword) => {print!("no password")},
-        Err(unpack::UnpackError::Incomplete) => {print!{"incomplete archive"}},
-        Err(unpack::UnpackError::Unknown) => {print!{"unkown error"}},
+        Err(e) => {print!{"{}", e}},
         Ok(result) => {
             archives::delete_archive(path);
             match result.password {

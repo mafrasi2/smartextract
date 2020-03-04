@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use std::error::Error;
 use std::fmt;
 use std::path::PathBuf;
@@ -9,6 +10,7 @@ use crate::rooted_tempdir;
 pub enum UnpackError {
     NoPassword,
     Incomplete,
+    Encoding,
     Unknown,
     Forwarded(Box<dyn Error>),
 }
@@ -16,22 +18,16 @@ pub enum UnpackError {
 impl fmt::Display for UnpackError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            NoPassword => write!(f, "no password found"),
-            Incomplete => write!(f, "incomplete archive"),
-            Unknown => write!(f, "unknown error (FIXME)"),
+            UnpackError::NoPassword => write!(f, "no password found"),
+            UnpackError::Incomplete => write!(f, "incomplete archive"),
+            UnpackError::Encoding => write!(f, "invalid encoding"),
+            UnpackError::Unknown => write!(f, "unknown error (FIXME)"),
             UnpackError::Forwarded(error) => write!(f, "{}", error)
         }
     }
 }
 
-impl<'a> Error for UnpackError {
-    fn source(&'a self) -> Option<&'a (dyn Error + 'static)> {
-        match self {
-            UnpackError::Forwarded(error) => error,
-            _ => None
-        }
-    }
-}
+impl Error for UnpackError {}
 
 pub struct Unpack {
     pub volumes: Option<Vec<PathBuf>>,
@@ -40,8 +36,9 @@ pub struct Unpack {
 }
 
 fn try_unpack_7z(path: &PathBuf, pdb: &PasswordDatabase) -> Result<Unpack, UnpackError> {
-    let tmpdir = rooted_tempdir::create_rooted_tempdir(path.parent(), "Hello");
-    let parent = path.parent().expect("file has no parent directory");
+    let parent = path.parent()
+        .ok_or_else(|| UnpackError::Encoding)?;
+    let tmpdir = rooted_tempdir::create_rooted_tempdir(parent.into(), "TODO");
     Err(UnpackError::Unknown)
 }
 
