@@ -1,5 +1,7 @@
-use std::ffi::OsString;
 use std::collections::HashMap;
+use std::ffi::OsString;
+use std::fs;
+use std::io;
 use std::path::PathBuf;
 use lazy_static;
 use regex::Regex;
@@ -27,6 +29,17 @@ impl Archive {
             parts,
             kind
         })
+    }
+
+    pub fn delete(&self) -> io::Result<()> {
+        let mut ret = Ok(());
+        for part in &self.parts {
+            let res = fs::remove_file(part);
+            if res.is_err() {
+                ret = res;
+            }
+        }
+        ret
     }
 }
 
@@ -136,10 +149,6 @@ pub fn detect_archive(mut path: PathBuf) -> Option<Archive> {
     } else {
         None
     }
-}
-
-pub fn delete_archive(archive: &Archive) {
-    unimplemented!();
 }
 
 
