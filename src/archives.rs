@@ -1,4 +1,5 @@
-use std::collections::HashSet;
+use std::ffi::OsString;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use lazy_static;
 use regex::Regex;
@@ -6,64 +7,129 @@ use regex::Regex;
 #[cfg(test)]
 use matches::assert_matches;
 
+#[derive(Debug, Clone)]
+pub enum ArchiveKind {
+    RAR,
+    P7Z,
+}
+
 #[derive(Debug)]
-pub enum Archive {
-    RAR(PathBuf),
-    P7Z(PathBuf)
+pub struct Archive {
+    pub basename: OsString,
+    pub parts: Vec<PathBuf>,
+    pub kind: ArchiveKind,
 }
 
 impl Archive {
-    pub fn create(suffix: &str, path: PathBuf) -> Option<Self> {
-        if suffix == "rar" {
-            Some(Archive::RAR(path))
-        } else if suffix == "7z" {
-            Some(Archive::P7Z(path))
-        } else {
-            None
-        }
-    }
-
-    pub fn path(& self) -> &PathBuf {
-        match self {
-            Archive::RAR(path) => &path,
-            Archive::P7Z(path) => &path,
-        }
-    }
-
-    fn is_supported_type(suffix: &str) -> bool {
-        lazy_static::lazy_static! {
-            static ref ARCHIVE_TYPES: HashSet<&'static str> = ["rar", "7z"].iter().cloned().collect();
-        }
-        ARCHIVE_TYPES.contains(suffix)
+    pub fn create(basename: OsString, parts: Vec<PathBuf>, kind: ArchiveKind) -> Option<Self> {
+        Some(Archive {
+            basename,
+            parts,
+            kind
+        })
     }
 }
 
-pub fn detect_archive(path: PathBuf) -> Option<Archive> {
+impl ArchiveKind {
+    fn from_suffix(suffix: &str) -> Option<&ArchiveKind> {
+        lazy_static::lazy_static! {
+            static ref ARCHIVE_TYPES: HashMap<&'static str, ArchiveKind> = [
+                ("rar", ArchiveKind::RAR), ("7z", ArchiveKind::P7Z)
+            ].iter().cloned().collect();
+        }
+        ARCHIVE_TYPES.get(suffix)
+    }
+}
+
+pub fn detect_archive(mut path: PathBuf) -> Option<Archive> {
     lazy_static::lazy_static! {
         static ref INFIX_PART_RE: Regex = Regex::new("^part\\d+$").unwrap();
-        static ref INFIX_FIRST_PART_RE: Regex = Regex::new("^part0*1$").unwrap();
-        static ref SUFFIX_PART_RE: Regex = Regex::new("^\\d+$").unwrap();
-        static ref SUFFIX_FIRST_PART_RE: Regex = Regex::new("^0*1$").unwrap();
+        static ref INFIX_FIRST_PART_RE: Regex = Regex::new("^part(0*)1$").unwrap();
+        static ref SUFFIX_FIRST_PART_RE: Regex = Regex::new("^(0*)1$").unwrap();
     }
 
     let fname = match path.file_name() {
         Some(fname) => fname,
         None => return None
     };
-    let fname = fname.to_string_lossy().to_lowercase();
+    let fname_lc = fname.to_string_lossy().to_lowercase();
 
-    let parts: Vec<_> = fname.rsplit(".").collect();
-    if Archive::is_supported_type(parts[0]) {
-        if parts.len() <= 1 {
-            Archive::create(parts[0], path)
-        } else if INFIX_FIRST_PART_RE.is_match(parts[1]) || !INFIX_PART_RE.is_match(parts[1]) {
-            Archive::create(parts[0], path)
+    let mut parts_rev: Vec<_> = fname_lc.rsplit(".").collect();
+    if let Some(kind) = ArchiveKind::from_suffix(parts_rev[0]) {
+        // for example foo.part1.rar
+        if parts_rev.len() <= 1 {
+            Archive::create(
+                "unnamed".into(),
+                vec![path],
+                kind.clone()
+            )
+        } else if let Some(caps) = INFIX_FIRST_PART_RE.captures(parts_rev[1]) {
+            let mut parts_orig: Vec<String> = fname.to_string_lossy()
+                .split(".")
+                .map(|s| s.to_string())
+                .collect();
+            let num_base_parts = parts_orig.len() - 2;
+            let basename = parts_orig[..num_base_parts].iter()
+                .map(|s| &**s)
+                .collect::<Vec<_>>()
+                .join(".");
+
+            let mut archive_parts = vec![];
+            let padding = caps[1].len() + 1;
+            let unicode_name = parts_rev.join(".");
+            if fname != &unicode_name[..] {
+                return None;
+            }
+            let mut ctr: usize = 1;
+            while path.exists() {
+                archive_parts.push(path.clone());
+                ctr += 1;
+                parts_orig[1] = format!("part{:0padding$}", ctr, padding = padding);
+                path.set_file_name(parts_orig.join("."));
+            }
+
+            Archive::create(basename.into(), archive_parts, kind.clone())
+        } else if !INFIX_PART_RE.is_match(parts_rev[1]) {
+            Archive::create(
+                parts_rev[1..].join(".").into(),
+                vec![path],
+                kind.clone()
+            )
         } else {
             None
         }
-    } else if parts.len() > 1 && Archive::is_supported_type(parts[1]) {
-        if SUFFIX_FIRST_PART_RE.is_match(parts[0]) || !SUFFIX_PART_RE.is_match(parts[0]) {
-            Archive::create(parts[1], path)
+    } else if parts_rev.len() > 1 {
+        // for example foo.rar.001
+        if let Some(kind) = ArchiveKind::from_suffix(parts_rev[1]) {
+            if let Some(caps) = SUFFIX_FIRST_PART_RE.captures(parts_rev[0]) {
+                let mut parts_orig: Vec<String> = fname.to_string_lossy()
+                    .split(".")
+                    .map(|s| s.to_string())
+                    .collect();
+                let num_base_parts = parts_orig.len() - 2;
+                let basename = parts_orig[..num_base_parts].iter()
+                    .map(|s| &**s)
+                    .collect::<Vec<_>>()
+                    .join(".");
+
+                let mut archive_parts = vec![];
+                let padding = caps[1].len() + 1;
+                let unicode_name = parts_rev.join(".");
+                if fname != &unicode_name[..] {
+                    return None;
+                }
+                let mut ctr: usize = 1;
+                while path.exists() {
+                    archive_parts.push(path.clone());
+                    ctr += 1;
+                    parts_orig[0] = format!("{:0padding$}", ctr, padding = padding);
+                    path.set_file_name(parts_orig.join("."));
+                }
+
+                Archive::create(basename.into(), archive_parts, kind.clone())
+            } else {
+                None
+            }
         } else {
             None
         }
@@ -72,7 +138,8 @@ pub fn detect_archive(path: PathBuf) -> Option<Archive> {
     }
 }
 
-pub fn delete_archive(path: &PathBuf) {
+pub fn delete_archive(archive: &Archive) {
+    unimplemented!();
 }
 
 

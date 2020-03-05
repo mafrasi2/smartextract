@@ -1,8 +1,8 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::error::Error;
 use std::fmt;
 use std::path::PathBuf;
-use crate::archives::Archive;
+use crate::archives::{Archive, ArchiveKind};
 use crate::passwords::PasswordDatabase;
 use crate::rooted_tempdir;
 
@@ -35,20 +35,20 @@ pub struct Unpack {
     pub password: Option<String>,
 }
 
-fn try_unpack_7z(path: &PathBuf, pdb: &PasswordDatabase) -> Result<Unpack, UnpackError> {
-    let parent = path.parent()
+fn try_unpack_7z(archive: &Archive, pdb: &PasswordDatabase) -> Result<Unpack, UnpackError> {
+    let parent = archive.parts[0].parent()
         .ok_or_else(|| UnpackError::Encoding)?;
     let tmpdir = rooted_tempdir::create_rooted_tempdir(parent.into(), "TODO");
     Err(UnpackError::Unknown)
 }
 
-fn try_unpack_rar(path: &PathBuf, pdb: &PasswordDatabase) -> Result<Unpack, UnpackError> {
+fn try_unpack_rar(archive: &Archive, pdb: &PasswordDatabase) -> Result<Unpack, UnpackError> {
     Err(UnpackError::Unknown)
 }
 
 pub fn try_unpack(archive: &Archive, pdb: &PasswordDatabase) -> Result<Unpack, UnpackError> {
-    match archive {
-        Archive::P7Z(path) => try_unpack_7z(path, pdb),
-        Archive::RAR(path) => try_unpack_rar(path, pdb),
+    match archive.kind {
+        ArchiveKind::P7Z => try_unpack_7z(archive, pdb),
+        ArchiveKind::RAR => try_unpack_rar(archive, pdb),
     }
 }

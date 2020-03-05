@@ -9,12 +9,11 @@ mod rooted_tempdir;
 mod unpack;
 
 fn do_archive(archive: &archives::Archive, pdb: &mut passwords::PasswordDatabase) {
-    let path = archive.path();
-    print!("{}...", path.as_os_str().to_string_lossy());
+    print!("{}...", archive.parts[0].as_os_str().to_string_lossy());
     match unpack::try_unpack(archive, pdb) {
         Err(e) => {print!{"{}", e}},
         Ok(result) => {
-            archives::delete_archive(path);
+            archives::delete_archive(archive);
             match result.password {
                 Some(pwd) => pdb.promote(&pwd),
                 None => {}
