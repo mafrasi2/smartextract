@@ -13,12 +13,15 @@ fn do_archive(archive: &archives::Archive, pdb: &mut passwords::PasswordDatabase
     match unpack::try_unpack(archive, pdb) {
         Err(e) => {print!{"{}", e}},
         Ok(result) => {
-            archive.delete();
+            print!("success");
+            match archive.delete() {
+                Ok(_) => {}
+                Err(err) => print!(" ({})", err)
+            };
             match result.password {
                 Some(pwd) => pdb.promote(&pwd),
                 None => {}
             };
-            print!("success")
         }
     };
     println!();
