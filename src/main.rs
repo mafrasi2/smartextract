@@ -1,4 +1,4 @@
-use std::env;
+use clap::Clap;
 use std::fs;
 use std::path::PathBuf;
 
@@ -8,9 +8,9 @@ mod passwords;
 mod rooted_tempdir;
 mod unpack;
 
-fn do_archive(archive: &archives::Archive, pdb: &mut passwords::PasswordDatabase) {
+fn do_archive(archive: &archives::Archive, pdb: &mut passwords::PasswordDatabase, overwrite: bool, always_dirs: bool) {
     print!("{}...", archive.parts[0].as_os_str().to_string_lossy());
-    match unpack::try_unpack(archive, pdb) {
+    match unpack::try_unpack(archive, pdb, overwrite, always_dirs) {
         Err(e) => {print!{"{}", e}},
         Ok(result) => {
             print!("success");
@@ -27,14 +27,25 @@ fn do_archive(archive: &archives::Archive, pdb: &mut passwords::PasswordDatabase
     println!();
 }
 
+#[derive(Clap)]
+#[clap(version = "1.0", author = "Max Sistemich")]
+struct Opts {
+    /// Either files to extract or directories that contain files
+    inputs: Vec<PathBuf>,
+    /// Overwrite existing files
+    #[clap(short, long)]
+    overwrite: bool,
+    /// Always create directories
+    #[clap(short, long)]
+    directories: bool,
+}
+
 fn main() {
     let mut cfg = config::Config::load();
-    let args = env::args();
-    let paths = if args.len() > 1 {
-        args.into_iter()
-            .skip(1)
-            .map(|s| PathBuf::from(s))
-            .collect()
+    let opts: Opts = Opts::parse();
+
+    let paths = if opts.inputs.len() > 1 {
+        opts.inputs
     } else {
         vec![PathBuf::from(".")]
     };
@@ -50,7 +61,7 @@ fn main() {
                     continue;
                 }
             };
-            do_archive(&archive, &mut pdb);
+            do_archive(&archive, &mut pdb, opts.overwrite, opts.directories);
         } else {
             let archives = match fs::read_dir(&path) {
                 Ok(archives) => archives,
@@ -68,7 +79,7 @@ fn main() {
                     }
                 };
                 match archives::detect_archive(entry) {
-                    Some(archive) => do_archive(&archive, &mut pdb),
+                    Some(archive) => do_archive(&archive, &mut pdb, opts.overwrite, opts.directories),
                     None => {}
                 }
             }

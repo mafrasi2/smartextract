@@ -1,7 +1,8 @@
 use anyhow::Result;
 use std::error::Error;
+use std::io;
 use std::fmt;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use crate::archives::{Archive, ArchiveKind};
 use crate::passwords::PasswordDatabase;
 use crate::rooted_tempdir;
@@ -35,20 +36,33 @@ pub struct Unpack {
     pub password: Option<String>,
 }
 
-fn try_unpack_7z(archive: &Archive, pdb: &PasswordDatabase) -> Result<Unpack, UnpackError> {
+fn try_unpack_7z<P: AsRef<Path>>(archive: &Archive, to: P, pdb: &PasswordDatabase, overwrite: bool, always_dir: bool) -> Result<Unpack, UnpackError> {
+    unimplemented!("7z extraction");
+}
+
+fn try_unpack_rar<P: AsRef<Path>>(archive: &Archive, to: P, pdb: &PasswordDatabase, overwrite: bool, always_dir: bool) -> Result<Unpack, UnpackError> {
+    unimplemented!("rar extraction");
+}
+
+fn move_from_tempdir<P: AsRef<Path>>(parent: P, tmpdir: P) -> io::Result<()> {
+    unimplemented!("move from tempdir");
+}
+
+pub fn try_unpack(archive: &Archive, pdb: &PasswordDatabase, overwrite: bool, always_dir: bool) -> Result<Unpack, UnpackError> {
     let parent = archive.parts[0].parent()
         .ok_or_else(|| UnpackError::Encoding)?;
-    let tmpdir = rooted_tempdir::create_rooted_tempdir(parent.into(), "TODO");
-    Err(UnpackError::Unknown)
-}
-
-fn try_unpack_rar(archive: &Archive, pdb: &PasswordDatabase) -> Result<Unpack, UnpackError> {
-    Err(UnpackError::Unknown)
-}
-
-pub fn try_unpack(archive: &Archive, pdb: &PasswordDatabase) -> Result<Unpack, UnpackError> {
-    match archive.kind {
-        ArchiveKind::P7Z => try_unpack_7z(archive, pdb),
-        ArchiveKind::RAR => try_unpack_rar(archive, pdb),
-    }
+    let tmpdir = rooted_tempdir::create_rooted_tempdir(
+        parent.into(),
+        &archive.basename.to_string_lossy()
+    ).or_else(|e| Err(UnpackError::Forwarded(e.into())))?;
+    let unpack_res = match archive.kind {
+        ArchiveKind::P7Z => try_unpack_7z(archive, &tmpdir.path, pdb, overwrite, always_dir),
+        ArchiveKind::RAR => try_unpack_rar(archive, &tmpdir.path, pdb, overwrite, always_dir),
+    };
+    let unpack = match unpack_res {
+        Err(_) => return unpack_res,
+        Ok(unpack) => unpack
+    };
+    let _ = move_from_tempdir(&parent, &&*tmpdir.path);
+    Ok(unpack)
 }
