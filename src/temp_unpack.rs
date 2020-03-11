@@ -54,6 +54,8 @@ pub fn try_unpack(archive: &Archive, pdb: &PasswordDatabase, overwrite: bool, al
         if let None = rdir.next() {
             // only move empty or one-element results
             let _ = move_from_tempdir(&parent, &&*tmpdir.path);
+        } else {
+            tmpdir.keep();
         }
     }
     Ok(unpack)
