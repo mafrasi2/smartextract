@@ -4,7 +4,7 @@ use std::io;
 use std::fmt;
 use std::path::{PathBuf, Path};
 use crate::archives::Archive;
-use crate::passwords::PasswordDatabase;
+use crate::passwords::{Password, PasswordDatabase};
 use crate::rooted_tempdir;
 
 #[derive(Debug)]
@@ -31,9 +31,7 @@ impl fmt::Display for UnpackError {
 impl Error for UnpackError {}
 
 pub struct Unpack {
-    pub volumes: Option<Vec<PathBuf>>,
-    pub files: Option<Vec<PathBuf>>,
-    pub password: Option<String>,
+    pub password: Password,
 }
 
 fn move_from_tempdir<P: AsRef<Path>>(parent: P, tmpdir: P) -> io::Result<()> {

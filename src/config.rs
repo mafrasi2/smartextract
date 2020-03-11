@@ -4,9 +4,11 @@ use xdg::BaseDirectories;
 use serde::{Serialize, Deserialize};
 use serde_json;
 
+use crate::passwords::Password;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
-    pub passwords: Vec<String>,
+    pub passwords: Vec<Password>,
 }
 
 impl Config {

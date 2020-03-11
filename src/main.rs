@@ -20,10 +20,7 @@ fn do_archive(archive: &archives::Archive, pdb: &mut passwords::PasswordDatabase
                 Ok(_) => {},
                 Err(err) => print!(" ({})", err)
             };
-            match result.password {
-                Some(pwd) => pdb.promote(&pwd),
-                None => {}
-            };
+            pdb.promote(&result.password);
         }
     };
     println!();

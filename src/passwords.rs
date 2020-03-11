@@ -1,11 +1,19 @@
 use std::collections::HashSet;
+use std::cmp::Eq;
+use serde::{Serialize, Deserialize};
 
-pub struct PasswordDatabase {
-    pub passwords: Vec<String>
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum Password {
+    NoPassword,
+    Password(String)
 }
 
-fn dedup_passwords(passwords: &mut Vec<String>) {
-    let mut pwd_set: HashSet<String> = passwords.iter().cloned().collect();
+pub struct PasswordDatabase {
+    pub passwords: Vec<Password>
+}
+
+fn dedup_passwords(passwords: &mut Vec<Password>) {
+    let mut pwd_set: HashSet<Password> = passwords.iter().cloned().collect();
     passwords.retain(|pwd| {
         if pwd_set.contains(pwd) {
             pwd_set.remove(pwd);
@@ -17,12 +25,12 @@ fn dedup_passwords(passwords: &mut Vec<String>) {
 }
 
 impl PasswordDatabase {
-    pub fn create(mut passwords: Vec<String>) -> Self {
+    pub fn create(mut passwords: Vec<Password>) -> Self {
         dedup_passwords(&mut passwords);
         Self {passwords}
     }
 
-    pub fn promote(&mut self, correct_pwd: &str) {
+    pub fn promote(&mut self, correct_pwd: &Password) {
         let old_position = self.passwords.iter().position(|pwd| pwd == correct_pwd);
         let old_position = match old_position {
             Some(index) => index,
