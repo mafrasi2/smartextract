@@ -2,7 +2,8 @@ use anyhow::Result;
 use std::error::Error;
 use std::io;
 use std::fmt;
-use std::path::{PathBuf, Path};
+use std::fs;
+use std::path::Path;
 use crate::archives::Archive;
 use crate::passwords::{Password, PasswordDatabase};
 use crate::rooted_tempdir;
@@ -12,7 +13,6 @@ pub enum UnpackError {
     NoPassword,
     Incomplete,
     Encoding,
-    Unknown,
     Forwarded(Box<dyn Error>),
 }
 
@@ -22,7 +22,6 @@ impl fmt::Display for UnpackError {
             UnpackError::NoPassword => write!(f, "no password found"),
             UnpackError::Incomplete => write!(f, "incomplete archive"),
             UnpackError::Encoding => write!(f, "invalid encoding"),
-            UnpackError::Unknown => write!(f, "unknown error (FIXME)"),
             UnpackError::Forwarded(error) => write!(f, "{}", error)
         }
     }
@@ -49,8 +48,13 @@ pub fn try_unpack(archive: &Archive, pdb: &PasswordDatabase, overwrite: bool, al
     if always_dir {
         tmpdir.keep();
     } else {
-        todo!("check if there is more than one file");
-        let _ = move_from_tempdir(&parent, &&*tmpdir.path);
+        let mut rdir = fs::read_dir(&tmpdir.path)
+            .map_err(|e| UnpackError::Forwarded(e.into()))?;
+        rdir.next();
+        if let None = rdir.next() {
+            // only move empty or one-element results
+            let _ = move_from_tempdir(&parent, &&*tmpdir.path);
+        }
     }
     Ok(unpack)
 }
