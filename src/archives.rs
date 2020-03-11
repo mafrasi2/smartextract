@@ -2,9 +2,15 @@ use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use lazy_static;
 use regex::Regex;
+
+use crate::passwords::PasswordDatabase;
+use crate::temp_unpack::Unpack;
+use crate::temp_unpack::UnpackError;
+use crate::rar::unpack_rar;
+use crate::p7z::unpack_7z;
 
 #[derive(Debug, Clone)]
 pub enum ArchiveKind {
@@ -37,6 +43,13 @@ impl Archive {
             }
         }
         ret
+    }
+
+    pub fn unpack<P: AsRef<Path>>(&self, to: P, pdb: &PasswordDatabase, overwrite: bool) -> Result<Unpack, UnpackError> {
+        match self.kind {
+            ArchiveKind::P7Z => unpack_7z(self, to, pdb, overwrite),
+            ArchiveKind::RAR => unpack_rar(self, to, pdb, overwrite),
+        }
     }
 }
 

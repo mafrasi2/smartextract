@@ -3,7 +3,8 @@ use std::io::Result;
 use std::path::PathBuf;
 
 pub struct RootedTempDir {
-    pub path: PathBuf
+    pub path: PathBuf,
+    kept: bool,
 }
 
 pub fn create_rooted_tempdir(parent: PathBuf, name: &str) -> Result<RootedTempDir> {
@@ -20,12 +21,21 @@ pub fn create_rooted_tempdir(parent: PathBuf, name: &str) -> Result<RootedTempDi
     }
     fs::create_dir(&child)?;
     Ok(RootedTempDir {
-        path: child
+        path: child,
+        kept: false
     })
+}
+
+impl RootedTempDir {
+    pub fn keep(&mut self) {
+        self.kept = true;
+    }
 }
 
 impl Drop for RootedTempDir {
     fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.path);
+        if !self.kept {
+            let _ = fs::remove_dir_all(&self.path);
+        }
     }
 }

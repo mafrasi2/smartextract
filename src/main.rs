@@ -6,16 +6,18 @@ mod archives;
 mod config;
 mod passwords;
 mod rooted_tempdir;
-mod unpack;
+mod temp_unpack;
+mod rar;
+mod p7z;
 
 fn do_archive(archive: &archives::Archive, pdb: &mut passwords::PasswordDatabase, overwrite: bool, always_dirs: bool) {
     print!("{}...", archive.parts[0].as_os_str().to_string_lossy());
-    match unpack::try_unpack(archive, pdb, overwrite, always_dirs) {
+    match temp_unpack::try_unpack(archive, pdb, overwrite, always_dirs) {
         Err(e) => {print!{"{}", e}},
         Ok(result) => {
             print!("success");
             match archive.delete() {
-                Ok(_) => {}
+                Ok(_) => {},
                 Err(err) => print!(" ({})", err)
             };
             match result.password {
