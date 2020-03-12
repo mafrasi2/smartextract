@@ -25,14 +25,23 @@ fn parse_7z_output<'a>(output: &Output, pwd: &'a Password) -> P7ZResult<'a> {
     }
 }
 
+fn encode_pwd(cmd: &mut Command, pwd: &Password) {
+    match pwd {
+        Password::NoPassword => {
+            cmd.arg("-p")
+        },
+        Password::Password(pwd) => {
+            cmd.arg(format!("-p{}", pwd))
+        }
+    };
+}
+
 fn find_pwd_by_list<'a>(archive: &Archive, pdb: &'a PasswordDatabase) -> io::Result<P7ZResult<'a>> {
     for pwd in &pdb.passwords {
         let mut cmd = Command::new("7z");
         cmd.arg("l");
-        if let Password::Password(pwd) = pwd {
-            cmd.arg(format!("-p{}", pwd));
-        }
         cmd.arg(&archive.parts[0]);
+        encode_pwd(&mut cmd, pwd);
 
         let result = parse_7z_output(&cmd.output()?, pwd);
         if let P7ZResult::NoPasswordFound = result {
@@ -50,11 +59,8 @@ fn try_unpack_7z<'a, P: AsRef<Path>>(archive: &Archive, to: P, pwd: &'a Password
     cmd.arg("x")
        .arg(output_arg);
     cmd.arg(if overwrite { "-aoa" } else {"-aos" });
-    if let Password::Password(pwd) = pwd {
-        cmd.arg(format!("-p{}", pwd));
-    }
+    encode_pwd(&mut cmd, pwd);
     cmd.arg(&archive.parts[0]);
-    dbg!(&cmd);
 
     return Ok(parse_7z_output(&cmd.output()?, pwd));
 }
