@@ -43,10 +43,10 @@ fn main() {
     let mut cfg = config::Config::load();
     let opts: Opts = Opts::parse();
 
-    let paths = if opts.inputs.len() > 1 {
-        opts.inputs
-    } else {
+    let paths = if opts.inputs.is_empty() {
         vec![PathBuf::from(".")]
+    } else {
+        opts.inputs
     };
 
     let mut pdb = passwords::PasswordDatabase::create(cfg.passwords.clone());
