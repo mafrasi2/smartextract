@@ -107,7 +107,8 @@ pub fn detect_archive(mut path: PathBuf) -> Option<Archive> {
             while path.exists() {
                 archive_parts.push(path.clone());
                 ctr += 1;
-                parts_orig[1] = format!("part{:0padding$}", ctr, padding = padding);
+                let parts_len = parts_orig.len();
+                parts_orig[parts_len - 2] = format!("part{:0padding$}", ctr, padding = padding);
                 path.set_file_name(parts_orig.join("."));
             }
 
@@ -145,7 +146,8 @@ pub fn detect_archive(mut path: PathBuf) -> Option<Archive> {
                 while path.exists() {
                     archive_parts.push(path.clone());
                     ctr += 1;
-                    parts_orig[0] = format!("{:0padding$}", ctr, padding = padding);
+                    let parts_len = parts_orig.len();
+                    parts_orig[parts_len - 1] = format!("{:0padding$}", ctr, padding = padding);
                     path.set_file_name(parts_orig.join("."));
                 }
 
