@@ -99,7 +99,7 @@ pub fn detect_archive(mut path: PathBuf) -> Option<Archive> {
 
             let mut archive_parts = vec![];
             let padding = caps[1].len() + 1;
-            let unicode_name = parts_rev.join(".");
+            let unicode_name = parts_orig.join(".");
             if fname != &unicode_name[..] {
                 return None;
             }
