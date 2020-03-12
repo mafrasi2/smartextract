@@ -1,3 +1,4 @@
+use std::ffi::OsString;
 use std::io;
 use std::path::Path;
 use std::process::{Command, Output};
@@ -29,7 +30,7 @@ fn find_pwd_by_list<'a>(archive: &Archive, pdb: &'a PasswordDatabase) -> io::Res
         let mut cmd = Command::new("7z");
         cmd.arg("l");
         if let Password::Password(pwd) = pwd {
-            cmd.arg("-p").arg(pwd);
+            cmd.arg(format!("-p{}", pwd));
         }
         cmd.arg(&archive.parts[0]);
 
@@ -44,14 +45,16 @@ fn find_pwd_by_list<'a>(archive: &Archive, pdb: &'a PasswordDatabase) -> io::Res
 
 fn try_unpack_7z<'a, P: AsRef<Path>>(archive: &Archive, to: P, pwd: &'a Password, overwrite: bool) -> io::Result<P7ZResult<'a>> {
     let mut cmd = Command::new("7z");
+    let mut output_arg: OsString = "-o".into();
+    output_arg.push(to.as_ref());
     cmd.arg("x")
-       .arg("-o")
-       .arg(to.as_ref());
+       .arg(output_arg);
     cmd.arg(if overwrite { "-aoa" } else {"-aos" });
     if let Password::Password(pwd) = pwd {
-        cmd.arg("-p").arg(pwd);
+        cmd.arg(format!("-p{}", pwd));
     }
     cmd.arg(&archive.parts[0]);
+    dbg!(&cmd);
 
     return Ok(parse_7z_output(&cmd.output()?, pwd));
 }
