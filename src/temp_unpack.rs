@@ -33,8 +33,32 @@ pub struct Unpack {
     pub password: Password,
 }
 
-fn move_from_tempdir<P: AsRef<Path>>(parent: P, tmpdir: P) -> io::Result<()> {
-    unimplemented!("move from tempdir");
+fn try_move_from_tempdir<P1: AsRef<Path>, P2: AsRef<Path>>(tmpdir: P1, to: P2) -> io::Result<bool> {
+    let mut dest = to.as_ref().to_path_buf();
+    for entry in fs::read_dir(&tmpdir)? {
+        let src = entry?.path();
+        let fname = match src.file_name() {
+            None => return Ok(false),
+            Some(fname) => fname
+        };
+        dest.push(fname);
+        if dest.exists() {
+            return Ok(false)
+        }
+        dest.pop();
+    }
+
+    for entry in fs::read_dir(&tmpdir)? {
+        let src = entry?.path();
+        let fname = match src.file_name() {
+            None => return Ok(false),
+            Some(fname) => fname
+        };
+        dest.push(fname);
+        fs::rename(src, &dest)?;
+        dest.pop();
+    }
+    Ok(true)
 }
 
 pub fn try_unpack(archive: &Archive, pdb: &PasswordDatabase, overwrite: bool, always_dir: bool) -> Result<Unpack, UnpackError> {
@@ -53,7 +77,10 @@ pub fn try_unpack(archive: &Archive, pdb: &PasswordDatabase, overwrite: bool, al
         rdir.next();
         if let None = rdir.next() {
             // only move empty or one-element results
-            let _ = move_from_tempdir(&parent, &&*tmpdir.path);
+            let res = try_move_from_tempdir(&tmpdir.path, &parent);
+            if let Ok(false) = res {
+                tmpdir.keep();
+            }
         } else {
             tmpdir.keep();
         }
