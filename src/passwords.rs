@@ -26,6 +26,9 @@ fn dedup_passwords(passwords: &mut Vec<Password>) {
 
 impl PasswordDatabase {
     pub fn create(mut passwords: Vec<Password>) -> Self {
+        if passwords.len() == 0 {
+            passwords.push(Password::NoPassword);
+        }
         dedup_passwords(&mut passwords);
         Self {passwords}
     }
