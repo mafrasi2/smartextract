@@ -10,6 +10,7 @@ import sys
 import tempfile
 from json import JSONDecoder, JSONDecodeError
 from pathlib import Path
+from pprint import pprint
 
 import generate_desc
 
@@ -57,9 +58,9 @@ def run(outdir, test, executable, cfg_file=None, verbose=False):
 def check(outdir, should_desc, verbose=False):
     is_desc = generate_desc.describe(outdir)
     if is_desc == should_desc:
-        return CheckResult.PASSED
+        return CheckResult.PASSED, is_desc
     else:
-        return CheckResult.FAILED
+        return CheckResult.FAILED, is_desc
 
 def run_test(test, executable, cfg_file=None, verbose=False):
     with (test / "description.json").open() as f:
@@ -96,13 +97,14 @@ if __name__ == "__main__":
             print(f"Testing {test.name}...", end="")
             sys.stdout.flush()
             try:
-                result = run_test(test, executable, cfg_file=cfg_file.name, verbose=args.verbose)
+                result, desc = run_test(test, executable, cfg_file=cfg_file.name, verbose=args.verbose)
                 if result == CheckResult.PASSED:
                     print("PASSED")
                 else:
                     print("FAILED")
                     if args.verbose:
                         print("error: check failed")
+                        pprint(desc)
             except UnpackError as e:
                 all_passed = False
                 print("FAILED")
