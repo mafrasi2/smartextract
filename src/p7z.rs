@@ -40,8 +40,8 @@ fn find_pwd_by_list<'a>(archive: &Archive, pdb: &'a PasswordDatabase) -> io::Res
     for pwd in &pdb.passwords {
         let mut cmd = Command::new("7z");
         cmd.arg("l");
-        cmd.arg(&archive.parts[0]);
         encode_pwd(&mut cmd, pwd);
+        cmd.arg(&archive.parts[0]);
 
         let result = parse_7z_output(&cmd.output()?, pwd);
         if let P7ZResult::NoPasswordFound = result {
@@ -72,7 +72,7 @@ pub fn extract_7z<P: AsRef<Path>>(archive: &Archive, to: P, pdb: &PasswordDataba
         P7ZResult::NoPasswordFound => return Err(ExtractError::NoPassword),
         P7ZResult::Corrupt => return Err(ExtractError::Incomplete),
         P7ZResult::Success(pwd) => {
-            let extract_res = try_extract_7z(archive, to.as_ref(), pwd, overwrite);
+            let extract_res = try_extract_7z(archive, &to, pwd, overwrite);
             if let Ok(P7ZResult::Success(pwd)) = extract_res {
                 return Ok(Extract {
                     password: pwd.clone()
@@ -88,7 +88,7 @@ pub fn extract_7z<P: AsRef<Path>>(archive: &Archive, to: P, pdb: &PasswordDataba
                 continue;
             }
         }
-        let extract_res = try_extract_7z(archive, to.as_ref(), pwd, overwrite);
+        let extract_res = try_extract_7z(archive, &to, pwd, overwrite);
         if let Ok(P7ZResult::Success(pwd)) = extract_res {
             return Ok(Extract {
                 password: pwd.clone()
