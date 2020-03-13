@@ -45,10 +45,10 @@ impl Archive {
         ret
     }
 
-    pub fn extract<P: AsRef<Path>>(&self, to: P, pdb: &PasswordDatabase, overwrite: bool) -> Result<Extract, ExtractError> {
+    pub fn extract<P: AsRef<Path>>(&self, to: P, pdb: &PasswordDatabase) -> Result<Extract, ExtractError> {
         match self.kind {
-            ArchiveKind::P7Z => extract_7z(self, to, pdb, overwrite),
-            ArchiveKind::RAR => extract_rar(self, to, pdb, overwrite),
+            ArchiveKind::P7Z => extract_7z(self, to, pdb),
+            ArchiveKind::RAR => extract_rar(self, to, pdb),
         }
     }
 }

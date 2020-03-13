@@ -32,7 +32,7 @@ fn do_archive(archive: &archives::Archive, pdb: &mut passwords::PasswordDatabase
 struct Opts {
     /// Either files to extract or directories that contain files
     inputs: Vec<PathBuf>,
-    /// Overwrite existing files
+    /// Overwrite existing files (currently unused)
     #[clap(short, long)]
     overwrite: bool,
     /// Always create directories

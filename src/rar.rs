@@ -37,13 +37,13 @@ fn try_pwd_by_list<'a>(archive: &Archive, pwd: &'a Password) -> io::Result<Passw
     }
 }
 
-fn try_extract_rar<'a, P: AsRef<Path>>(archive: &Archive, pwd: &'a Password, to: P, overwrite: bool) -> io::Result<PasswordAttempt<'a>> {
+fn try_extract_rar<'a, P: AsRef<Path>>(archive: &Archive, pwd: &'a Password, to: P) -> io::Result<PasswordAttempt<'a>> {
     let mut cmd = Command::new("unrar");
     if let Some(parent) = archive.parts[0].parent() {
         cmd.current_dir(parent);
     }
     cmd.arg("x");
-    cmd.arg(if overwrite { "-o+" } else {"-o-" });
+    cmd.arg("-o+");
     encode_pwd(&mut cmd, pwd);
     cmd.arg(&archive.parts[0]);
     cmd.arg(to.as_ref());
@@ -60,7 +60,7 @@ fn try_extract_rar<'a, P: AsRef<Path>>(archive: &Archive, pwd: &'a Password, to:
     }
 }
 
-pub fn extract_rar<P: AsRef<Path>>(archive: &Archive, to: P, pdb: &PasswordDatabase, overwrite: bool) -> Result<Extract, ExtractError> {
+pub fn extract_rar<P: AsRef<Path>>(archive: &Archive, to: P, pdb: &PasswordDatabase) -> Result<Extract, ExtractError> {
     let mut found_pwd = None;
     for pwd in &pdb.passwords {
         let list_res = try_pwd_by_list(archive, pwd);
@@ -68,7 +68,7 @@ pub fn extract_rar<P: AsRef<Path>>(archive: &Archive, to: P, pdb: &PasswordDatab
             Err(e) => return Err(ExtractError::Forwarded(e.into())),
             Ok(PasswordAttempt::CorruptArchive) => return Err(ExtractError::Incomplete),
             Ok(PasswordAttempt::Correct(pwd)) => {
-                let extract_res = try_extract_rar(archive, pwd, &to, overwrite);
+                let extract_res = try_extract_rar(archive, pwd, &to);
                 match extract_res {
                     Ok(PasswordAttempt::Correct(pwd)) => return Ok(Extract {
                         password: pwd.clone()
@@ -91,7 +91,7 @@ pub fn extract_rar<P: AsRef<Path>>(archive: &Archive, to: P, pdb: &PasswordDatab
                 continue;
             }
         }
-        let extract_res = try_extract_rar(archive, pwd, &to, overwrite);
+        let extract_res = try_extract_rar(archive, pwd, &to);
         match extract_res {
             Err(e) => return Err(ExtractError::Forwarded(e.into())),
             Ok(PasswordAttempt::CorruptArchive) => return Err(ExtractError::Incomplete),

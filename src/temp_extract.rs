@@ -61,14 +61,14 @@ fn try_move_from_tempdir<P1: AsRef<Path>, P2: AsRef<Path>>(tmpdir: P1, to: P2) -
     Ok(true)
 }
 
-pub fn try_extract(archive: &Archive, pdb: &PasswordDatabase, overwrite: bool, always_dir: bool) -> Result<Extract, ExtractError> {
+pub fn try_extract(archive: &Archive, pdb: &PasswordDatabase, _overwrite: bool, always_dir: bool) -> Result<Extract, ExtractError> {
     let parent = archive.parts[0].parent()
         .ok_or_else(|| ExtractError::Encoding)?;
     let mut tmpdir = rooted_tempdir::create_rooted_tempdir(
         parent.into(),
         &archive.basename.to_string_lossy()
     ).or_else(|e| Err(ExtractError::Forwarded(e.into())))?;
-    let extract = archive.extract(&tmpdir.path, pdb, overwrite)?;
+    let extract = archive.extract(&tmpdir.path, pdb)?;
     if always_dir {
         tmpdir.keep();
     } else {
