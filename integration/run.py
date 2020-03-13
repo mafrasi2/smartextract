@@ -92,7 +92,7 @@ if __name__ == "__main__":
     with tempfile.NamedTemporaryFile(prefix="smartunpack", suffix=".json") as cfg_file:
         shutil.copyfile(Path(__file__).parent / "smartunpack.json", cfg_file.name)
 
-        all_passed = True
+        num_passed = 0
         for test in tests:
             print(f"Testing {test.name}...", end="")
             sys.stdout.flush()
@@ -100,13 +100,18 @@ if __name__ == "__main__":
                 result, desc = run_test(test, executable, cfg_file=cfg_file.name, verbose=args.verbose)
                 if result == CheckResult.PASSED:
                     print("PASSED")
+                    num_passed += 1
                 else:
                     print("FAILED")
                     if args.verbose:
                         print("error: check failed")
                         pprint(desc)
             except UnpackError as e:
-                all_passed = False
                 print("FAILED")
                 if args.verbose:
                     print(e)
+        print(f"Total {num_passed} / {len(tests)} passed")
+        if num_passed == len(tests):
+            exit(0)
+        else:
+            exit(1)
