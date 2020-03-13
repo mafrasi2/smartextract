@@ -2,9 +2,7 @@ use std::io;
 use std::path::Path;
 use std::process::Command;
 
-use crate::archives::Archive;
-use crate::passwords::{Password, PasswordDatabase, PasswordAttempt};
-use crate::temp_extract::{Extract, ExtractError};
+use crate::passwords::{Password, PasswordAttempt};
 
 static RAR_BADPWD: i32 = 11;
 
@@ -19,11 +17,11 @@ fn encode_pwd(cmd: &mut Command, pwd: &Password) {
     };
 }
 
-fn try_pwd_by_list<'a>(archive: &Archive, pwd: &'a Password) -> io::Result<PasswordAttempt<'a>> {
+pub fn try_pwd_by_list<'a>(first_part: &Path, pwd: &'a Password) -> io::Result<PasswordAttempt<'a>> {
     let mut cmd = Command::new("unrar");
     cmd.arg("l");
     encode_pwd(&mut cmd, pwd);
-    cmd.arg(&archive.parts[0]);
+    cmd.arg(first_part);
     dbg!(&cmd);
 
     let status = cmd.status()?;
@@ -37,16 +35,16 @@ fn try_pwd_by_list<'a>(archive: &Archive, pwd: &'a Password) -> io::Result<Passw
     }
 }
 
-fn try_extract_rar<'a, P: AsRef<Path>>(archive: &Archive, pwd: &'a Password, to: P) -> io::Result<PasswordAttempt<'a>> {
+pub fn try_extract<'a>(first_part: &Path, pwd: &'a Password, to: &Path) -> io::Result<PasswordAttempt<'a>> {
     let mut cmd = Command::new("unrar");
-    if let Some(parent) = archive.parts[0].parent() {
+    if let Some(parent) = first_part.parent() {
         cmd.current_dir(parent);
     }
     cmd.arg("x");
     cmd.arg("-o+");
     encode_pwd(&mut cmd, pwd);
-    cmd.arg(&archive.parts[0]);
-    cmd.arg(to.as_ref());
+    cmd.arg(first_part);
+    cmd.arg(to);
     dbg!(&cmd);
 
     let status = cmd.status()?;
@@ -58,50 +56,4 @@ fn try_extract_rar<'a, P: AsRef<Path>>(archive: &Archive, pwd: &'a Password, to:
             _ => Ok(PasswordAttempt::CorruptArchive),
         }
     }
-}
-
-pub fn extract_rar<P: AsRef<Path>>(archive: &Archive, to: P, pdb: &PasswordDatabase) -> Result<Extract, ExtractError> {
-    let mut found_pwd = None;
-    for pwd in &pdb.passwords {
-        let list_res = try_pwd_by_list(archive, pwd);
-        match list_res {
-            Err(e) => return Err(ExtractError::Forwarded(e.into())),
-            Ok(PasswordAttempt::CorruptArchive) => return Err(ExtractError::Incomplete),
-            Ok(PasswordAttempt::Correct(pwd)) => {
-                let extract_res = try_extract_rar(archive, pwd, &to);
-                match extract_res {
-                    Ok(PasswordAttempt::Correct(pwd)) => return Ok(Extract {
-                        password: pwd.clone()
-                    }),
-                    Ok(PasswordAttempt::Incorrect) => {
-                        // the list strategy may have returned the wrong password
-                        found_pwd = Some(pwd);
-                        break;
-                    },
-                    _ => return Err(ExtractError::Incomplete)
-                }
-            },
-            Ok(PasswordAttempt::Incorrect) => {}
-        }
-    }
-
-    for pwd in &pdb.passwords {
-        if let Some(found_pwd) = found_pwd {
-            if pwd == found_pwd {
-                continue;
-            }
-        }
-        let extract_res = try_extract_rar(archive, pwd, &to);
-        match extract_res {
-            Err(e) => return Err(ExtractError::Forwarded(e.into())),
-            Ok(PasswordAttempt::CorruptArchive) => return Err(ExtractError::Incomplete),
-            Ok(PasswordAttempt::Correct(pwd)) => {
-                return Ok(Extract {
-                    password: pwd.clone()
-                })
-            }
-            Ok(PasswordAttempt::Incorrect) => {},
-        }
-    }
-    Err(ExtractError::NoPassword)
 }

@@ -5,6 +5,7 @@ use xdg::BaseDirectories;
 
 mod archives;
 mod config;
+mod extract;
 mod passwords;
 mod rooted_tempdir;
 mod temp_extract;

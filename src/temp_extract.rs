@@ -1,37 +1,11 @@
 use anyhow::Result;
-use std::error::Error;
 use std::io;
-use std::fmt;
 use std::fs;
 use std::path::Path;
+use crate::extract::{Extract, ExtractError};
 use crate::archives::Archive;
-use crate::passwords::{Password, PasswordDatabase};
+use crate::passwords::PasswordDatabase;
 use crate::rooted_tempdir;
-
-#[derive(Debug)]
-pub enum ExtractError {
-    NoPassword,
-    Incomplete,
-    Encoding,
-    Forwarded(Box<dyn Error>),
-}
-
-impl fmt::Display for ExtractError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            ExtractError::NoPassword => write!(f, "no password found"),
-            ExtractError::Incomplete => write!(f, "incomplete archive"),
-            ExtractError::Encoding => write!(f, "invalid encoding"),
-            ExtractError::Forwarded(error) => write!(f, "{}", error)
-        }
-    }
-}
-
-impl Error for ExtractError {}
-
-pub struct Extract {
-    pub password: Password,
-}
 
 fn try_move_from_tempdir<P1: AsRef<Path>, P2: AsRef<Path>>(tmpdir: P1, to: P2) -> io::Result<bool> {
     let mut dest = to.as_ref().to_path_buf();
