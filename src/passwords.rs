@@ -3,6 +3,7 @@ use std::cmp::Eq;
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[serde(untagged)]
 pub enum Password {
     NoPassword,
     Password(String)
