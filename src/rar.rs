@@ -22,7 +22,6 @@ pub fn try_pwd_by_list<'a>(first_part: &Path, pwd: &'a Password) -> io::Result<P
     cmd.arg("l");
     encode_pwd(&mut cmd, pwd);
     cmd.arg(first_part);
-    dbg!(&cmd);
 
     let status = cmd.status()?;
     if status.success() {
@@ -45,7 +44,6 @@ pub fn try_extract<'a>(first_part: &Path, pwd: &'a Password, to: &Path) -> io::R
     encode_pwd(&mut cmd, pwd);
     cmd.arg(first_part);
     cmd.arg(to);
-    dbg!(&cmd);
 
     let status = cmd.status()?;
     if status.success() {
