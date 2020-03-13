@@ -9,6 +9,12 @@ pub enum Password {
     Password(String)
 }
 
+pub enum PasswordAttempt<'a> {
+    Correct(&'a Password),
+    Incorrect,
+    CorruptArchive
+}
+
 pub struct PasswordDatabase {
     pub passwords: Vec<Password>
 }
