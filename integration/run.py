@@ -40,10 +40,16 @@ class CheckResult(enum.Enum):
     PASSED = enum.auto()
     FAILED = enum.auto()
 
-def run(outdir, test, executable, verbose=False):
+def run(outdir, test, executable, cfg_file=None, verbose=False):
     shutil.copytree(test, outdir, dirs_exist_ok=True)
     (outdir / "description.json").unlink()
-    proc = sp.Popen([str(executable), outdir], stdout=sp.PIPE, stderr=sp.STDOUT)
+
+    cmd = [str(executable)]
+    if cfg_file:
+        cmd.extend(["-c", cfg_file])
+    cmd.append(outdir)
+
+    proc = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.STDOUT)
     stdout, _ = proc.communicate()
     if proc.returncode != 0:
         raise UnpackError(f"smartunpack exited with status {proc.returncode}", stdout.decode())
@@ -55,12 +61,12 @@ def check(outdir, should_desc, verbose=False):
     else:
         return CheckResult.FAILED
 
-def run_test(test, executable, verbose=False):
+def run_test(test, executable, cfg_file=None, verbose=False):
     with (test / "description.json").open() as f:
         desc = json.load(f)
     with tempfile.TemporaryDirectory() as outdir:
         outdir = Path(outdir)
-        run(outdir, test, executable, verbose=verbose)
+        run(outdir, test, executable, cfg_file=cfg_file, verbose=verbose)
         return check(outdir, desc, verbose=verbose)
 
 def get_executable():
@@ -82,20 +88,23 @@ if __name__ == "__main__":
 
     executable = get_executable()
 
-    all_passed = True
-    for test in tests:
-        print(f"Testing {test.name}...", end="")
-        sys.stdout.flush()
-        try:
-            result = run_test(test, executable, verbose=args.verbose)
-            if result == CheckResult.PASSED:
-                print("PASSED")
-            else:
+    with tempfile.NamedTemporaryFile(prefix="smartunpack", suffix=".json") as cfg_file:
+        shutil.copyfile(Path(__file__).parent / "smartunpack.json", cfg_file.name)
+
+        all_passed = True
+        for test in tests:
+            print(f"Testing {test.name}...", end="")
+            sys.stdout.flush()
+            try:
+                result = run_test(test, executable, cfg_file=cfg_file.name, verbose=args.verbose)
+                if result == CheckResult.PASSED:
+                    print("PASSED")
+                else:
+                    print("FAILED")
+                    if args.verbose:
+                        print("error: check failed")
+            except UnpackError as e:
+                all_passed = False
                 print("FAILED")
                 if args.verbose:
-                    print("error: check failed")
-        except UnpackError as e:
-            all_passed = False
-            print("FAILED")
-            if args.verbose:
-                print(e)
+                    print(e)
