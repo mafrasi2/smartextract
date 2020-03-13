@@ -38,7 +38,7 @@ struct Opts {
     /// Always create directories
     #[clap(short, long)]
     directories: bool,
-    /// Path to the config file, defaults to ~/.config/smartunpack.json
+    /// Path to the config file, defaults to ~/.config/smartextract.json
     #[clap(short, long)]
     config: Option<PathBuf>
 }
@@ -50,7 +50,7 @@ fn main() {
         Some(cfg_path) => cfg_path,
         None => {
             let base_dirs = BaseDirectories::new().unwrap();
-            base_dirs.place_config_file("smartunpack.json").unwrap()
+            base_dirs.place_config_file("smartextract.json").unwrap()
         }
     };
     let mut cfg = config::Config::load(&cfg_path);

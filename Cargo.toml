@@ -1,5 +1,5 @@
 [package]
-name = "smartunpack"
+name = "smartextract"
 version = "0.1.0"
 authors = ["Max Sistemich <maximilian.sistemich@rwth-aachen.de>"]
 edition = "2018"

@@ -53,7 +53,7 @@ def run(outdir, test, executable, cfg_file=None, verbose=False):
     proc = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.STDOUT)
     stdout, _ = proc.communicate()
     if proc.returncode != 0:
-        raise UnpackError(f"smartunpack exited with status {proc.returncode}", stdout.decode())
+        raise UnpackError(f"smartextract exited with status {proc.returncode}", stdout.decode())
 
 def check(outdir, should_desc, verbose=False):
     is_desc = generate_desc.describe(outdir)
@@ -77,7 +77,7 @@ def get_executable():
             return msg["executable"]
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run the smartunpack integration tests")
+    parser = argparse.ArgumentParser(description="Run the smartextract integration tests")
     parser.add_argument("tests", nargs="*", help="test names (if empty all tests are run)")
     parser.add_argument("-v", "--verbose", action="store_true", help="use verbose output")
     args = parser.parse_args()
@@ -89,8 +89,8 @@ if __name__ == "__main__":
 
     executable = get_executable()
 
-    with tempfile.NamedTemporaryFile(prefix="smartunpack", suffix=".json") as cfg_file:
-        shutil.copyfile(Path(__file__).parent / "smartunpack.json", cfg_file.name)
+    with tempfile.NamedTemporaryFile(prefix="smartextract", suffix=".json") as cfg_file:
+        shutil.copyfile(Path(__file__).parent / "smartextract.json", cfg_file.name)
 
         num_passed = 0
         for test in tests:

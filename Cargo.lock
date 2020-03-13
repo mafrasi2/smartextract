@@ -209,7 +209,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "smartunpack"
+name = "smartextract"
 version = "0.1.0"
 dependencies = [
  "anyhow 1.0.26 (registry+https://github.com/rust-lang/crates.io-index)",
