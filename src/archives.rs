@@ -7,10 +7,10 @@ use lazy_static;
 use regex::Regex;
 
 use crate::passwords::PasswordDatabase;
-use crate::temp_unpack::Unpack;
-use crate::temp_unpack::UnpackError;
-use crate::rar::unpack_rar;
-use crate::p7z::unpack_7z;
+use crate::temp_extract::Extract;
+use crate::temp_extract::ExtractError;
+use crate::rar::extract_rar;
+use crate::p7z::extract_7z;
 
 #[derive(Debug, Clone)]
 pub enum ArchiveKind {
@@ -45,10 +45,10 @@ impl Archive {
         ret
     }
 
-    pub fn unpack<P: AsRef<Path>>(&self, to: P, pdb: &PasswordDatabase, overwrite: bool) -> Result<Unpack, UnpackError> {
+    pub fn extract<P: AsRef<Path>>(&self, to: P, pdb: &PasswordDatabase, overwrite: bool) -> Result<Extract, ExtractError> {
         match self.kind {
-            ArchiveKind::P7Z => unpack_7z(self, to, pdb, overwrite),
-            ArchiveKind::RAR => unpack_rar(self, to, pdb, overwrite),
+            ArchiveKind::P7Z => extract_7z(self, to, pdb, overwrite),
+            ArchiveKind::RAR => extract_rar(self, to, pdb, overwrite),
         }
     }
 }

@@ -30,7 +30,7 @@ def decode_stacked_json(document, pos=0, decoder=JSONDecoder()):
         yield obj
 
 
-class UnpackError(Exception):
+class ExtractError(Exception):
     def __init__(self, msg, log=None):
         super().__init__(msg)
         self.log = log
@@ -53,7 +53,7 @@ def run(outdir, test, executable, cfg_file=None, verbose=False):
     proc = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.STDOUT)
     stdout, _ = proc.communicate()
     if proc.returncode != 0:
-        raise UnpackError(f"smartextract exited with status {proc.returncode}", stdout.decode())
+        raise ExtractError(f"smartextract exited with status {proc.returncode}", stdout.decode())
 
 def check(outdir, should_desc, verbose=False):
     is_desc = generate_desc.describe(outdir)
@@ -106,7 +106,7 @@ if __name__ == "__main__":
                     if args.verbose:
                         print("error: check failed")
                         pprint(desc)
-            except UnpackError as e:
+            except ExtractError as e:
                 print("FAILED")
                 if args.verbose:
                     print(e)

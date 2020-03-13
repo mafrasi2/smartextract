@@ -7,13 +7,13 @@ mod archives;
 mod config;
 mod passwords;
 mod rooted_tempdir;
-mod temp_unpack;
+mod temp_extract;
 mod rar;
 mod p7z;
 
 fn do_archive(archive: &archives::Archive, pdb: &mut passwords::PasswordDatabase, overwrite: bool, always_dirs: bool) {
     print!("{}...", archive.parts[0].as_os_str().to_string_lossy());
-    match temp_unpack::try_unpack(archive, pdb, overwrite, always_dirs) {
+    match temp_extract::try_extract(archive, pdb, overwrite, always_dirs) {
         Err(e) => {print!{"{}", e}},
         Ok(result) => {
             print!("success");

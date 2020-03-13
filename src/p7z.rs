@@ -5,7 +5,7 @@ use std::process::{Command, Output};
 
 use crate::archives::Archive;
 use crate::passwords::{Password, PasswordDatabase};
-use crate::temp_unpack::{Unpack, UnpackError};
+use crate::temp_extract::{Extract, ExtractError};
 
 enum P7ZResult<'a> {
     Success(&'a Password),
@@ -52,7 +52,7 @@ fn find_pwd_by_list<'a>(archive: &Archive, pdb: &'a PasswordDatabase) -> io::Res
     Ok(P7ZResult::NoPasswordFound)
 }
 
-fn try_unpack_7z<'a, P: AsRef<Path>>(archive: &Archive, to: P, pwd: &'a Password, overwrite: bool) -> io::Result<P7ZResult<'a>> {
+fn try_extract_7z<'a, P: AsRef<Path>>(archive: &Archive, to: P, pwd: &'a Password, overwrite: bool) -> io::Result<P7ZResult<'a>> {
     let mut cmd = Command::new("7z");
     let mut output_arg: OsString = "-o".into();
     output_arg.push(to.as_ref());
@@ -65,16 +65,16 @@ fn try_unpack_7z<'a, P: AsRef<Path>>(archive: &Archive, to: P, pwd: &'a Password
     return Ok(parse_7z_output(&cmd.output()?, pwd));
 }
 
-pub fn unpack_7z<P: AsRef<Path>>(archive: &Archive, to: P, pdb: &PasswordDatabase, overwrite: bool) -> Result<Unpack, UnpackError> {
+pub fn extract_7z<P: AsRef<Path>>(archive: &Archive, to: P, pdb: &PasswordDatabase, overwrite: bool) -> Result<Extract, ExtractError> {
     let list_res = find_pwd_by_list(archive, pdb)
-        .map_err(|e| UnpackError::Forwarded(e.into()))?;
+        .map_err(|e| ExtractError::Forwarded(e.into()))?;
     match list_res {
-        P7ZResult::NoPasswordFound => return Err(UnpackError::NoPassword),
-        P7ZResult::Corrupt => return Err(UnpackError::Incomplete),
+        P7ZResult::NoPasswordFound => return Err(ExtractError::NoPassword),
+        P7ZResult::Corrupt => return Err(ExtractError::Incomplete),
         P7ZResult::Success(pwd) => {
-            let unpack_res = try_unpack_7z(archive, to.as_ref(), pwd, overwrite);
-            if let Ok(P7ZResult::Success(pwd)) = unpack_res {
-                return Ok(Unpack {
+            let extract_res = try_extract_7z(archive, to.as_ref(), pwd, overwrite);
+            if let Ok(P7ZResult::Success(pwd)) = extract_res {
+                return Ok(Extract {
                     password: pwd.clone()
                 })
             };
@@ -88,12 +88,12 @@ pub fn unpack_7z<P: AsRef<Path>>(archive: &Archive, to: P, pdb: &PasswordDatabas
                 continue;
             }
         }
-        let unpack_res = try_unpack_7z(archive, to.as_ref(), pwd, overwrite);
-        if let Ok(P7ZResult::Success(pwd)) = unpack_res {
-            return Ok(Unpack {
+        let extract_res = try_extract_7z(archive, to.as_ref(), pwd, overwrite);
+        if let Ok(P7ZResult::Success(pwd)) = extract_res {
+            return Ok(Extract {
                 password: pwd.clone()
             })
         };
     }
-    Err(UnpackError::NoPassword)
+    Err(ExtractError::NoPassword)
 }
