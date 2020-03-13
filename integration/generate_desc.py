@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -9,7 +10,11 @@ def describe(directory):
         if entry.is_dir():
             desc[entry.name] = describe(entry)
         else:
-            desc[entry.name] = entry.stat().st_size
+            hsh = hashlib.blake2b()
+            with open(entry, "rb") as f:
+                while chunk := f.read(4096):
+                    hsh.update(chunk)
+            desc[entry.name] = hsh.hexdigest()
     return desc
 
 if __name__ == "__main__":
