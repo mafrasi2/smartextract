@@ -1,6 +1,5 @@
 use std::fs::File;
-use std::path::PathBuf;
-use xdg::BaseDirectories;
+use std::path::Path;
 use serde::{Serialize, Deserialize};
 use serde_json;
 
@@ -18,14 +17,8 @@ impl Config {
         }
     }
 
-    fn get_config_file() -> PathBuf {
-        let base_dirs = BaseDirectories::new().unwrap();
-        base_dirs.place_config_file("smartunpack.json").unwrap()
-    }
-
-    pub fn load() -> Self {
-        let config_path = Config::get_config_file();
-        let config = if config_path.exists() {
+    pub fn load<P: AsRef<Path>>(config_path: P) -> Self {
+        let config = if config_path.as_ref().exists() {
             let config_file = File::open(config_path).unwrap();
             serde_json::from_reader(config_file).unwrap()
         } else {
@@ -34,8 +27,7 @@ impl Config {
         config
     }
 
-    pub fn store(&self) {
-        let config_path = Config::get_config_file();
+    pub fn store<P: AsRef<Path>>(&self, config_path: P) {
         let config_file = File::create(config_path).unwrap();
         serde_json::to_writer(config_file, self).unwrap();
     }

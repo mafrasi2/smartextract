@@ -1,6 +1,7 @@
 use clap::Clap;
 use std::fs;
 use std::path::PathBuf;
+use xdg::BaseDirectories;
 
 mod archives;
 mod config;
@@ -37,11 +38,22 @@ struct Opts {
     /// Always create directories
     #[clap(short, long)]
     directories: bool,
+    /// Path to the config file, defaults to ~/.config/smartunpack.json
+    #[clap(short, long)]
+    config: Option<PathBuf>
 }
 
 fn main() {
-    let mut cfg = config::Config::load();
     let opts: Opts = Opts::parse();
+
+    let cfg_path = match opts.config {
+        Some(cfg_path) => cfg_path,
+        None => {
+            let base_dirs = BaseDirectories::new().unwrap();
+            base_dirs.place_config_file("smartunpack.json").unwrap()
+        }
+    };
+    let mut cfg = config::Config::load(&cfg_path);
 
     let paths = if opts.inputs.is_empty() {
         vec![PathBuf::from(".")]
@@ -85,5 +97,5 @@ fn main() {
         }
     }
     cfg.passwords = pdb.passwords;
-    cfg.store();
+    cfg.store(&cfg_path);
 }
