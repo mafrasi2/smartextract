@@ -29,7 +29,7 @@ fn do_archive(archive: &archives::Archive, pdb: &mut passwords::PasswordDatabase
 }
 
 #[derive(Clap)]
-#[clap(version = "1.0", author = "Max Sistemich")]
+#[clap(version = "0.1.0", author = "Max Sistemich")]
 struct Opts {
     /// Either files to extract or directories that contain files
     inputs: Vec<PathBuf>,

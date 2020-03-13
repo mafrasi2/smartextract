@@ -163,27 +163,3 @@ pub fn detect_archive(mut path: PathBuf) -> Option<Archive> {
         None
     }
 }
-
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn archive_names() {
-        // TODO: how do I correctly test this
-        /*
-        assert_matches!(detect_archive(PathBuf::from(".rar")), Some(Archive::RAR(_)));
-        assert_matches!(detect_archive(PathBuf::from("abc.rar")), Some(Archive::RAR(_)));
-        assert_matches!(detect_archive(PathBuf::from("abc.rar.001")), Some(Archive::RAR(_)));
-        assert_matches!(detect_archive(PathBuf::from("abc.rar.002")), None);
-        assert_matches!(detect_archive(PathBuf::from("a.part1.rar")), Some(Archive::RAR(_)));
-        assert_matches!(detect_archive(PathBuf::from("a.part001.rar")), Some(Archive::RAR(_)));
-        assert_matches!(detect_archive(PathBuf::from("a.part2.rar")), None);
-
-        assert_matches!(detect_archive(PathBuf::from(".7z")), Some(Archive::P7Z(_)));
-        assert_matches!(detect_archive(PathBuf::from("a.7z.001")), Some(Archive::P7Z(_)));
-        assert_matches!(detect_archive(PathBuf::from("a.7z.002")), None);
-        assert_matches!(detect_archive(PathBuf::from("a.7z.010")), None);
-        assert_matches!(detect_archive(PathBuf::from("a.part01.7z")), Some(Archive::P7Z(_)));
-        */
-    }
-}
