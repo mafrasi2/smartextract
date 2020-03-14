@@ -42,7 +42,9 @@ class CheckResult(enum.Enum):
     FAILED = enum.auto()
 
 def run(outdir, test, executable, cfg_file=None, verbose=False):
-    shutil.copytree(test, outdir, dirs_exist_ok=True)
+    if outdir.exists():
+        shutil.rmtree(outdir)
+    shutil.copytree(test, outdir)
     (outdir / "description.json").unlink()
 
     cmd = [str(executable)]

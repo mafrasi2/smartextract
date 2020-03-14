@@ -12,7 +12,10 @@ def describe(directory):
         else:
             hsh = hashlib.blake2b()
             with open(entry, "rb") as f:
-                while chunk := f.read(4096):
+                while True:
+                    chunk = f.read(4096)
+                    if not chunk:
+                        break
                     hsh.update(chunk)
             desc[entry.name] = hsh.hexdigest()
     return desc
