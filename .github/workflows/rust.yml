@@ -18,4 +18,4 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
     - name: Run integration tests
-      run: tests/check
+      run: tests/check --verbose
